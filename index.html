@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парсер статей CSECURITY</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Парсер статей CSECURITY</h1>
+        
+        <div class="controls">
+            <div class="input-group">
+                <label for="startNum">Початковий номер:</label>
+                <input type="number" id="startNum" value="15" min="1" max="800">
+            </div>
+            <div class="input-group">
+                <label for="endNum">Кінцевий номер:</label>
+                <input type="number" id="endNum" value="34" min="1" max="800">
+            </div>
+            <button id="parseBtn" onclick="startParsing()">🚀 Почати парсинг</button>
+        </div>
+        
+        <div class="progress" id="progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Підготовка...</div>
+        </div>
+        
+        <div class="results" id="results" style="display: none;">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalProcessed">0</div>
+                    <div class="stat-label">Оброблено сторінок</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalFound">0</div>
+                    <div class="stat-label">Знайдено статей</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalErrors">0</div>
+                    <div class="stat-label">Помилок</div>
+                </div>
+            </div>
+            
+            <div class="article-grid" id="articlesContainer"></div>
+            
+            <div class="json-output" id="jsonOutput" style="display: none;">
+                <button class="copy-btn" onclick="copyToClipboard()">📋 Копіювати JSON</button>
+                <pre id="jsonContent"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
