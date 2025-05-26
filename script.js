@@ -104,7 +104,7 @@ async function parseArticle(number) {
         let keywords = '';
         if (keywordsSection) {
             const keywordsSpan = keywordsSection.querySelector('span.value');
-            keywords = keywordsSpan ? keywordsSpan.textContent.trim() : '';
+            keywords = keywordsSpan ? keywordsSpan.textContent.trim().replace(/\t+/g, ' ').replace(/\s+/g, ' ') : '';
         }
 
         // Витягуємо анотацію
@@ -117,7 +117,7 @@ async function parseArticle(number) {
 
         // Повертаємо результат, якщо є хоча б заголовок
         if (title || keywords || abstract) {
-            console.log(`Статття ${number}: успішно оброблено`);
+            console.log(`Стаття ${number}: успішно оброблено`);
             return {
                 number: number,
                 title: title,
@@ -208,6 +208,66 @@ function copyToClipboard() {
         console.error('Не вдалося скопіювати: ', err);
         alert('Не вдалося скопіювати в буфер обміну');
     });
+}
+
+// Функція для очищення даних від табуляцій та заміни крапки з комою
+function cleanDataForCSV(text) {
+    if (!text) return '';
+    return text
+        //.replace(/\t+/g, ' ')  // Замінюємо табуляції на пробіли
+        .replace(/;/g, ',')   // Замінюємо ; на ,
+        .replace(/\r?\n/g, ' ') // Замінюємо переноси рядків на пробіли
+        .trim();
+}
+
+// Функція для створення CSV контенту
+function generateCSV() {
+    if (articlesData.length === 0) {
+        alert('Немає даних для експорту!');
+        return;
+    }
+
+    // Заголовки CSV
+    const headers = 'keywords;abstract;key\n';
+    
+    // Генеруємо рядки CSV
+    const csvRows = articlesData.map(article => {
+        const keywords = cleanDataForCSV(article.keywords);
+        const abstract = cleanDataForCSV(article.abstract);
+        const key = article.number;
+        
+        return `"${keywords}";"${abstract}";"${key}"`;
+    });
+    
+    const csvContent = headers + csvRows.join('\n');
+    return csvContent;
+}
+
+// Функція для завантаження CSV файлу
+function downloadCSV() {
+    const csvContent = generateCSV();
+    if (!csvContent) return;
+    
+    // Створюємо Blob з CSV контентом
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // Створюємо URL для завантаження
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `csecurity_articles_${new Date().getTime()}.csv`);
+    link.style.visibility = 'hidden';
+    
+    // Додаємо посилання до DOM і клікаємо по ньому
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Звільняємо пам'ять
+    URL.revokeObjectURL(url);
+    
+    console.log('CSV файл завантажено успішно');
 }
 
 // Додаткова функція для перевірки стану сервера
