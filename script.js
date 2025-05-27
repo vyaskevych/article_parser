@@ -1,5 +1,7 @@
 let articlesData = [];
 let isProcessing = false;
+let allKeywords = new Set();
+
 
 async function startParsing() {
     if (isProcessing) return;
@@ -14,12 +16,15 @@ async function startParsing() {
 
     isProcessing = true;
     articlesData = [];
+    allKeywords.clear();
 
     document.getElementById('parseBtn').disabled = true;
     document.getElementById('progress').style.display = 'block';
     document.getElementById('results').style.display = 'block';
     document.getElementById('articlesContainer').innerHTML = '';
     document.getElementById('jsonOutput').style.display = 'none';
+    document.getElementById('filterSection').style.display = 'none';
+
 
     let processed = 0;
     let found = 0;
@@ -47,6 +52,7 @@ async function startParsing() {
     }
 
     updateJsonOutput();
+    setupKeywordFilter();
     isProcessing = false;
     document.getElementById('parseBtn').disabled = false;
     document.getElementById('progressText').textContent = 'Парсинг завершено!';
@@ -62,7 +68,7 @@ async function parseArticle(number) {
     try {
         const response = await fetch(url);
         const data = await response.json();
-        
+
         // Перевіряємо, чи є помилка в API відповіді
         if (!data.success) {
             if (data.error) {
@@ -70,7 +76,7 @@ async function parseArticle(number) {
             }
             return null;
         }
-        
+
         if (!data.contents) {
             console.log(`Статття ${number}: немає контенту`);
             return null;
@@ -82,14 +88,14 @@ async function parseArticle(number) {
         // Перевіряємо наявність анотації
         const annotationHeaders = doc.querySelectorAll('h2');
         let hasAnnotation = false;
-        
+
         for (const header of annotationHeaders) {
             if (header.textContent.includes('Анотація')) {
                 hasAnnotation = true;
                 break;
             }
         }
-        
+
         if (!hasAnnotation) {
             console.log(`Статття ${number}: не знайдено анотацію`);
             return null;
@@ -150,18 +156,25 @@ function displayArticle(article) {
     const container = document.getElementById('articlesContainer');
     const articleDiv = document.createElement('div');
     articleDiv.className = 'article-card';
+    articleDiv.dataset.articleId = article.number;
 
-    // Обробляємо ключові слова
-    const keywordsArray = article.keywords ? 
-        article.keywords.split(',').map(k => k.trim()).filter(k => k) : [];
-    
+    // Обробляємо ключові слова та додаємо їх до глобального набору
+    const keywordsArray = article.keywords ?
+        article.keywords.replace(/[;,]+/g, ',').split(',').map(k => k.trim().replace(/\.$/, '')).filter(k => k) : [];
+
+    keywordsArray.forEach(keyword => {
+        if (keyword && keyword.length > 0) {
+            allKeywords.add(keyword.toLowerCase());
+        }
+    });
+
     const keywordsTags = keywordsArray.map(keyword =>
         `<span class="keyword-tag">${escapeHtml(keyword)}</span>`
     ).join('');
 
     articleDiv.innerHTML = `
         <div class="article-number">№ ${article.number}</div>
-        <div class="article-title">${escapeHtml(article.title)}</div>
+        <div class="article-title"><a href="https://www.csecurity.kubg.edu.ua/index.php/journal/article/view/${article.number}" target="_blank">${escapeHtml(article.title)}</a></div>
         ${article.keywords ? `
             <div class="article-keywords">
                 <h4>Ключові слова:</h4>
@@ -187,11 +200,88 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Функції для роботи з фільтром
+function setupKeywordFilter() {
+    if (articlesData.length === 0) return;
+
+    // Показуємо секцію фільтра
+    document.getElementById('filterSection').style.display = 'block';
+
+    // Заповнюємо datalist унікальними ключовими словами
+    const datalist = document.getElementById('keywordsList');
+    datalist.innerHTML = '';
+
+    const sortedKeywords = Array.from(allKeywords).sort();
+    sortedKeywords.forEach(keyword => {
+        const option = document.createElement('option');
+        option.value = keyword;
+        datalist.appendChild(option);
+    });
+
+    // Додаємо обробник подій для фільтра
+    const filterInput = document.getElementById('keywordFilter');
+    filterInput.addEventListener('input', filterArticles);
+
+    // Оновлюємо статистику
+    updateFilterStats();
+}
+
+function filterArticles() {
+    const filterValue = document.getElementById('keywordFilter').value.toLowerCase().trim();
+    const articleCards = document.querySelectorAll('.article-card');
+
+    if (!filterValue) {
+        // Показуємо всі статті, якщо фільтр порожній
+        articleCards.forEach(card => {
+            card.classList.remove('hidden');
+        });
+    } else {
+        // Фільтруємо статті
+        articleCards.forEach(card => {
+            const articleId = parseInt(card.dataset.articleId);
+            const article = articlesData.find(a => a.number === articleId);
+
+            if (article && article.keywords) {
+                const articleKeywords = article.keywords.toLowerCase();
+                const hasKeyword = articleKeywords.includes(filterValue);
+
+                if (hasKeyword) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+    }
+
+    updateFilterStats();
+}
+
+function clearFilter() {
+    document.getElementById('keywordFilter').value = '';
+    filterArticles();
+}
+
+function updateFilterStats() {
+    const totalArticles = document.querySelectorAll('.article-card').length;
+    const visibleArticles = document.querySelectorAll('.article-card:not(.hidden)').length;
+
+    document.getElementById('totalCount').textContent = totalArticles;
+    document.getElementById('visibleCount').textContent = visibleArticles;
+}
+
+
 function updateJsonOutput() {
     if (articlesData.length > 0) {
         const jsonContent = JSON.stringify(articlesData, null, 2);
         document.getElementById('jsonContent').textContent = jsonContent;
         document.getElementById('jsonOutput').style.display = 'block';
+
+        // Показуємо фільтр тільки якщо є статті
+        document.getElementById('filterSection').style.display = 'block';
+        updateFilterStats();
     }
 }
 
@@ -229,16 +319,16 @@ function generateCSV() {
 
     // Заголовки CSV
     const headers = 'keywords;abstract;key\n';
-    
+
     // Генеруємо рядки CSV
     const csvRows = articlesData.map(article => {
         const keywords = cleanDataForCSV(article.keywords);
         const abstract = cleanDataForCSV(article.abstract);
         const key = article.number;
-        
+
         return `"${keywords}";"${abstract}";"${key}"`;
     });
-    
+
     const csvContent = headers + csvRows.join('\n');
     return csvContent;
 }
@@ -247,26 +337,26 @@ function generateCSV() {
 function downloadCSV() {
     const csvContent = generateCSV();
     if (!csvContent) return;
-    
+
     // Створюємо Blob з CSV контентом
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    
+
     // Створюємо URL для завантаження
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    
+
     link.setAttribute('href', url);
     link.setAttribute('download', `csecurity_articles_${new Date().getTime()}.csv`);
     link.style.visibility = 'hidden';
-    
+
     // Додаємо посилання до DOM і клікаємо по ньому
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     // Звільняємо пам'ять
     URL.revokeObjectURL(url);
-    
+
     console.log('CSV файл завантажено успішно');
 }
 

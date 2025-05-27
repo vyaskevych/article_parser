@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="uk">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Парсер статей CSECURITY</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="container">
         <h1>📚 Парсер статей CSECURITY</h1>
-        
+
         <div class="controls">
             <div class="input-group">
                 <label for="startNum">Початковий номер:</label>
@@ -21,14 +23,14 @@
             </div>
             <button id="parseBtn" onclick="startParsing()">🚀 Почати парсинг</button>
         </div>
-        
+
         <div class="progress" id="progress">
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill"></div>
             </div>
             <div class="progress-text" id="progressText">Підготовка...</div>
         </div>
-        
+
         <div class="results" id="results" style="display: none;">
             <div class="stats">
                 <div class="stat-card">
@@ -44,12 +46,28 @@
                     <div class="stat-label">Помилок</div>
                 </div>
             </div>
-            
+
+            <div class="filter-section" id="filterSection" style="display: none;">
+                <div class="filter-controls">
+                    <div class="input-group">
+                        <label for="keywordFilter">Фільтр по ключовим словам:</label>
+                        <input type="text" id="keywordFilter" list="keywordsList"
+                            placeholder="Оберіть або введіть ключове слово">
+                        <datalist id="keywordsList"></datalist>
+                        <button id="clearFilter" onclick="clearFilter()" class="clear-btn">✖ Очистити</button>
+                    </div>
+                    <div class="filter-stats">
+                        <span id="filterStats">Показано: <span id="visibleCount">0</span> з <span
+                                id="totalCount">0</span> статей</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="article-grid" id="articlesContainer"></div>
-            
+
             <div class="json-output" id="jsonOutput" style="display: none;">
                 <button class="copy-btn" onclick="copyToClipboard()">📋 Копіювати JSON</button>
-                 <button class="copy-btn" onclick="downloadCSV()">📊 Завантажити CSV</button>
+                <button class="copy-btn" onclick="downloadCSV()">📊 Завантажити CSV</button>
                 <pre id="jsonContent"></pre>
             </div>
         </div>
@@ -58,4 +76,5 @@
     <script src="script.js"></script>
 
 </body>
+
 </html>
