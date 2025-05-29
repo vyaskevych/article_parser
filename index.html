@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Парсер статей CSECURITY</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lunr@2.3.9/lunr.js"></script>
+    <script src="https://unpkg.com/lunr-languages@1.14.0/lunr.stemmer.support.js"></script>
+    <script src="https://unpkg.com/lunr-languages@1.14.0/lunr.multi.js"></script>
+    <script src="lunr.uk.js"></script>
 </head>
 
 <body>
@@ -49,13 +53,32 @@
 
             <div class="filter-section" id="filterSection" style="display: none;">
                 <div class="filter-controls">
+                    <!-- Пошук по тексту -->
+                    <div class="input-group search-group">
+                        <label for="searchInput">🔍 Розширений пошук:</label>
+                        <input type="text" id="searchInput" placeholder="Введіть запит для пошуку...">
+                        <button id="clearSearch" onclick="clearSearch()" class="clear-btn">✖ Очистити</button>
+                    </div>
+
+                    <!-- Сортування -->
+                    <div class="input-group sort-group">
+                        <label for="sortSelect">📊 Сортування:</label>
+                        <select id="sortSelect" onchange="applySorting()">
+                            <option value="default">За замовчуванням (номер статті)</option>
+                            <option value="relevance">За релевантністю</option>
+                            <option value="title">За назвою (А-Я)</option>
+                        </select>
+                    </div>
+
+                    <!-- Фільтр по ключовим словам -->
                     <div class="input-group">
-                        <label for="keywordFilter">Фільтр по ключовим словам:</label>
+                        <label for="keywordFilter">🏷️ Фільтр по ключовим словам:</label>
                         <input type="text" id="keywordFilter" list="keywordsList"
                             placeholder="Оберіть або введіть ключове слово">
                         <datalist id="keywordsList"></datalist>
                         <button id="clearFilter" onclick="clearFilter()" class="clear-btn">✖ Очистити</button>
                     </div>
+
                     <div class="filter-stats">
                         <span id="filterStats">Показано: <span id="visibleCount">0</span> з <span
                                 id="totalCount">0</span> статей</span>
